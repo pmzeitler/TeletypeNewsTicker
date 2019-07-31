@@ -11,6 +11,7 @@ file_name         = ""
 teletype_delay_ds = 1
 full_display_s    = 10
 reload_on_loop    = true
+prefix_chars      = ""
 use_cursor        = false
 use_rand_cursor   = false
 use_cursor_char   = "_"
@@ -123,9 +124,10 @@ function script_properties()
 	obs.obs_properties_add_bool(props, "reload_on_loop", "When EOF reached, Reload File")
 	obs.obs_properties_add_int(props, "teletype_delay_ds", "Teletype Delay (0.1 seconds)", 0, 11, 1)
 	obs.obs_properties_add_int(props, "full_display_s", "Full Line Display Time (seconds)", 1, 31, 1)
-	obs.obs_properties_add_bool(props, "use_cursor", "Use Leading Character When Teletyping")
-	obs.obs_properties_add_bool(props, "use_rand_cursor", "Randomize Leading Character")
-	obs.obs_properties_add_text(props, "use_cursor_char", "Leading Character(s)", obs.OBS_TEXT_DEFAULT)
+	obs.obs_properties_add_text(props, "prefix_chars", "Line Prefix Character(s)", obs.OBS_TEXT_DEFAULT)
+	obs.obs_properties_add_bool(props, "use_cursor", "Use Cursor Trailer Character When Teletyping")
+	obs.obs_properties_add_bool(props, "use_rand_cursor", "Randomize Cursor Character")
+	obs.obs_properties_add_text(props, "use_cursor_char", "Static Cursor Character(s)", obs.OBS_TEXT_DEFAULT)
 	return props
 end
 
@@ -149,6 +151,7 @@ function script_update(settings)
 	reload_on_loop = obs.obs_data_get_bool(settings, "reload_on_loop")
 	teletype_delay_ds = obs.obs_data_get_int(settings, "teletype_delay_ds")
 	full_display_s = obs.obs_data_get_int(settings, "full_display_s")
+	prefix_chars = obs.obs_data_get_string(settings, "prefix_chars")
 	use_cursor = obs.obs_data_get_bool(settings, "use_cursor")
 	use_rand_cursor = obs.obs_data_get_bool(settings, "use_rand_cursor")
 	use_cursor_char = obs.obs_data_get_string(settings, "use_cursor_char")
@@ -225,6 +228,7 @@ function update_display()
 	else 
 		text_to_display = lines_stack[current_line]
 	end
+	text_to_display = prefix_chars .. text_to_display 
 	local source = obs.obs_get_source_by_name(source_name)
 	if source ~= nil then
 		local settings = obs.obs_data_create()
