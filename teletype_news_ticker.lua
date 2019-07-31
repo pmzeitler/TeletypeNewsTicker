@@ -76,6 +76,27 @@ function lines_from(file)
   return lines
 end
 
+--functions courtesy Superlou (modified by Phoebe Zeitler)
+--https://github.com/superlou/obs-newsroom/blob/master/dsk_tool.lua
+function find_source_by_name_in_list(source_list, name)
+  for i, source in pairs(source_list) do
+    local source_name = obs.obs_source_get_name(source)
+    if source_name == name then
+      return source
+    end
+  end
+	--print ("Source " .. source_name .. " was not found")
+  return nil
+end
+
+function source_is_active(dsk_name)
+  local sources = obs.obs_enum_sources()
+  local dsk = find_source_by_name_in_list(sources, dsk_name)
+  local is_active = obs.obs_source_active(dsk)
+  obs.source_list_release(sources)
+  return is_active
+end
+
 -- end imported functions
 
 -- begin OBS required functions
@@ -135,7 +156,7 @@ function script_update(settings)
 end 
 
 function script_load(settings)
-
+	
 end
 
 -- end OBS required functions
@@ -166,6 +187,10 @@ end
 
 
 function timer_callback()
+	if not source_is_active(source_name) then
+		--print("Source " .. source_name .. " is not active")
+		return
+	end
 	current_delay = current_delay - 1
 	if current_delay <= 0 then 
 		if not teletype_mode then
@@ -211,9 +236,9 @@ function update_display()
 end
 
 function get_cursor_char() 
-	retval = use_cursor_char
+	local retval = use_cursor_char
 	if use_rand_cursor then
-		charnum = math.random(string.len(rand_cursor_chars))
+		local charnum = math.random(string.len(rand_cursor_chars))
 		retval = string.sub(rand_cursor_chars, charnum, charnum)
 	end
 	return retval
