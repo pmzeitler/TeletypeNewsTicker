@@ -11,6 +11,9 @@ file_name         = ""
 teletype_delay_ds = 1
 full_display_s    = 10
 reload_on_loop    = true
+use_cursor        = false
+use_rand_cursor   = false
+use_cursor_char   = "_"
 -- end properties variables
 
 -- begin internal use variables
@@ -24,6 +27,8 @@ timer_deployed	  = false
 
 -- begin user configurable options
 default_path      = "C:\\"
+	-- IMPORTANT: use only basic ASCII characters here-- UTF-8 not yet supported
+rand_cursor_chars = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890-=+_)(*&^%$#@![]{}|,<.>/? "
 -- end user configurable options
 
 -- end user configurable options
@@ -97,7 +102,9 @@ function script_properties()
 	obs.obs_properties_add_bool(props, "reload_on_loop", "When EOF reached, Reload File")
 	obs.obs_properties_add_int(props, "teletype_delay_ds", "Teletype Delay (0.1 seconds)", 0, 11, 1)
 	obs.obs_properties_add_int(props, "full_display_s", "Full Line Display Time (seconds)", 1, 31, 1)
-	
+	obs.obs_properties_add_bool(props, "use_cursor", "Use Leading Character When Teletyping")
+	obs.obs_properties_add_bool(props, "use_rand_cursor", "Randomize Leading Character")
+	obs.obs_properties_add_text(props, "use_cursor_char", "Leading Character(s)", obs.OBS_TEXT_DEFAULT)
 	return props
 end
 
@@ -121,6 +128,9 @@ function script_update(settings)
 	reload_on_loop = obs.obs_data_get_bool(settings, "reload_on_loop")
 	teletype_delay_ds = obs.obs_data_get_int(settings, "teletype_delay_ds")
 	full_display_s = obs.obs_data_get_int(settings, "full_display_s")
+	use_cursor = obs.obs_data_get_bool(settings, "use_cursor")
+	use_rand_cursor = obs.obs_data_get_bool(settings, "use_rand_cursor")
+	use_cursor_char = obs.obs_data_get_string(settings, "use_cursor_char")
 	reset()
 end 
 
@@ -133,6 +143,7 @@ end
 -- begin application-specific functions
 
 function reset() 
+	math.randomseed(os.time())
     if timer_deployed then
 		obs.timer_remove(timer_callback)
 	end
@@ -183,6 +194,9 @@ function update_display()
 	local text_to_display = ""
 	if teletype_mode then
 		text_to_display = string.sub(lines_stack[current_line], 1, current_char)
+		if use_cursor then
+			text_to_display = text_to_display .. get_cursor_char()
+		end
 	else 
 		text_to_display = lines_stack[current_line]
 	end
@@ -195,6 +209,16 @@ function update_display()
 		obs.obs_source_release(source)
 	end
 end
+
+function get_cursor_char() 
+	retval = use_cursor_char
+	if use_rand_cursor then
+		charnum = math.random(string.len(rand_cursor_chars))
+		retval = string.sub(rand_cursor_chars, charnum, charnum)
+	end
+	return retval
+end
+
 
 -- end application-specific functions
 
