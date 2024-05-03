@@ -125,7 +125,7 @@ function script_properties()
 	local sources = obs.obs_enum_sources()
 	if sources ~= nil then
 		for _, source in ipairs(sources) do
-			source_id = obs.obs_source_get_id(source)
+			source_id = obs.obs_source_get_unversioned_id(source)
 			if source_id == "text_gdiplus" or source_id == "text_ft2_source" then
 				local name = obs.obs_source_get_name(source)
 				obs.obs_property_list_add_string(p, name, name)
@@ -142,7 +142,7 @@ function script_properties()
 	obs.obs_properties_add_bool(props, "use_cursor", "Use Cursor Trailer Character When Teletyping")
 	obs.obs_properties_add_bool(props, "use_rand_cursor", "Randomize Cursor Character")
 	obs.obs_properties_add_text(props, "use_cursor_char", "Static Cursor Character(s)", obs.OBS_TEXT_DEFAULT)
-	obs.obs_properties_add_text(props, "date_format", "Date Format", "%d %B %Y")
+	obs.obs_properties_add_text(props, "date_format", "Date Format", obs.OBS_TEXT_DEFAULT)
 	return props
 end
 
