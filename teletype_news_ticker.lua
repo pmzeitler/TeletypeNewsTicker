@@ -24,14 +24,13 @@ current_line      = 1
 current_char      = 1
 teletype_mode     = false
 timer_deployed	  = false
+processed_line    = ""
 -- end internal use variables
 
 -- begin user configurable options
 default_path      = "C:\\"
 	-- IMPORTANT: use only basic ASCII characters here-- UTF-8 not yet supported
 rand_cursor_chars = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890-=+_)(*&^%$#@![]{}|,<.>/? "
--- end user configurable options
-
 -- end user configurable options
 
 -- begin imported functions
@@ -122,7 +121,7 @@ function script_properties()
 	
 	obs.obs_properties_add_path(props, "file_name", "Source File", obs.OBS_PATH_FILE, "Text Files (*.txt)", default_path)
 	obs.obs_properties_add_bool(props, "reload_on_loop", "When EOF reached, Reload File")
-	obs.obs_properties_add_int(props, "teletype_delay_ds", "Teletype Delay (0.1 seconds)", 0, 11, 1)
+	obs.obs_properties_add_int(props, "teletype_delay_ds", "Teletype Delay (0.1 seconds)", 0, 101, 1)
 	obs.obs_properties_add_int(props, "full_display_s", "Full Line Display Time (seconds)", 1, 31, 1)
 	obs.obs_properties_add_text(props, "prefix_chars", "Line Prefix Character(s)", obs.OBS_TEXT_DEFAULT)
 	obs.obs_properties_add_bool(props, "use_cursor", "Use Cursor Trailer Character When Teletyping")
@@ -133,7 +132,7 @@ end
 
 -- A function named script_defaults will be called to set the default settings
 function script_defaults(settings)
-	obs.obs_data_set_default_int(settings, "teletype_delay_ds", 1)
+	obs.obs_data_set_default_int(settings, "teletype_delay_ds", 10)
 	obs.obs_data_set_default_int(settings, "full_display_s", 10)
 end
 
@@ -197,19 +196,10 @@ function timer_callback()
 	current_delay = current_delay - 1
 	if current_delay <= 0 then 
 		if not teletype_mode then
-			current_line = current_line + 1
-			if current_line > #lines_stack then
-				if reload_on_loop then 
-					lines_stack = lines_from(file_name)
-				end
-				current_line = 1
-			end
-			current_char = 1
-			teletype_mode = true
-			current_delay = teletype_delay_ds
+			next_line()
 		else
 			current_char = current_char + 1
-			if current_char > string.len(lines_stack[current_line]) then
+			if current_char > string.len(processed_line) then
 				teletype_mode = false
 				current_delay = full_display_s * 10
 			end
@@ -218,15 +208,42 @@ function timer_callback()
 	update_display()
 end 
 
+function next_line() 
+    local is_valid_line = false
+	while (is_valid_line == false) do
+		current_line = current_line + 1
+		if current_line > #lines_stack then
+			if reload_on_loop then 
+				lines_stack = lines_from(file_name)
+			end
+			current_line = 1
+		end
+		current_char = 1
+		teletype_mode = true
+		current_delay = teletype_delay_ds
+		if string.sub(lines_stack[current_line], 1,1) == "#" then
+			is_valid_line = false
+		else
+			is_valid_line = true
+		end
+	end
+	process_line()
+end
+
+function process_line()
+	processed_line = lines_stack[current_line]
+	processed_line = string.gsub(processed_line, "%[date%]", os.date("%d %B %Y"))
+end
+
 function update_display() 
 	local text_to_display = ""
 	if teletype_mode then
-		text_to_display = string.sub(lines_stack[current_line], 1, current_char)
+		text_to_display = string.sub(processed_line, 1, current_char)
 		if use_cursor then
 			text_to_display = text_to_display .. get_cursor_char()
 		end
 	else 
-		text_to_display = lines_stack[current_line]
+		text_to_display = processed_line
 	end
 	text_to_display = prefix_chars .. text_to_display 
 	local source = obs.obs_get_source_by_name(source_name)
