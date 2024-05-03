@@ -5,6 +5,25 @@ obs = obslua
 -- phoebe.zeitler@gmail.com 
 -- Support: https://obsproject.com/forum/resources/teletype-news-ticker.725/
 
+-- begin user configurable options
+default_path      = "C:\\"
+	-- IMPORTANT: use only basic ASCII characters here-- UTF-8 not yet supported
+rand_cursor_chars = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890-=+_)(*&^%$#@![]{}|,<.>/? "
+-- end user configurable options
+
+-- begin user configurable functions
+
+-- A function to allow the user to specify custom replacements to be 
+--   performed on the line, after default replacements have been made.
+--   The line currently being readied for display is processed_line .
+function user_process_line()
+  -- EXAMPLE: this is the date processing used in the default process_line function.
+  -- processed_line = string.gsub(processed_line, "%[date%]", os.date(date_format))
+
+end
+
+-- end user configurable functions
+
 -- begin properties variables
 source_name       = ""
 file_name         = ""
@@ -15,6 +34,7 @@ prefix_chars      = ""
 use_cursor        = false
 use_rand_cursor   = false
 use_cursor_char   = "_"
+date_format = "%d %B %Y"
 -- end properties variables
 
 -- begin internal use variables
@@ -27,11 +47,6 @@ timer_deployed	  = false
 processed_line    = ""
 -- end internal use variables
 
--- begin user configurable options
-default_path      = "C:\\"
-	-- IMPORTANT: use only basic ASCII characters here-- UTF-8 not yet supported
-rand_cursor_chars = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890-=+_)(*&^%$#@![]{}|,<.>/? "
--- end user configurable options
 
 -- begin imported functions
 
@@ -127,6 +142,7 @@ function script_properties()
 	obs.obs_properties_add_bool(props, "use_cursor", "Use Cursor Trailer Character When Teletyping")
 	obs.obs_properties_add_bool(props, "use_rand_cursor", "Randomize Cursor Character")
 	obs.obs_properties_add_text(props, "use_cursor_char", "Static Cursor Character(s)", obs.OBS_TEXT_DEFAULT)
+	obs.obs_properties_add_text(props, "date_format", "Date Format", "%d %B %Y")
 	return props
 end
 
@@ -154,6 +170,7 @@ function script_update(settings)
 	use_cursor = obs.obs_data_get_bool(settings, "use_cursor")
 	use_rand_cursor = obs.obs_data_get_bool(settings, "use_rand_cursor")
 	use_cursor_char = obs.obs_data_get_string(settings, "use_cursor_char")
+	date_format = obs.obs_data_get_string(settings, "date_format")
 	reset()
 end 
 
@@ -232,7 +249,9 @@ end
 
 function process_line()
 	processed_line = lines_stack[current_line]
-	processed_line = string.gsub(processed_line, "%[date%]", os.date("%d %B %Y"))
+	processed_line = string.gsub(processed_line, "%[date%]", os.date(date_format))
+	
+	user_process_line()
 end
 
 function update_display() 
